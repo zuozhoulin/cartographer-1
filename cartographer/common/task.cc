@@ -42,6 +42,7 @@ void Task::AddDependency(std::weak_ptr<Task> dependency) {
   {
     absl::MutexLock locker(&mutex_);
     CHECK_EQ(state_, NEW);
+    /// weak_ptr.lock() --- 若对应的shared_ptr控制的资源已被释放，则返回nullptr，否则返回对应的shared_ptr
     if ((shared_dependency = dependency.lock())) {
       ++uncompleted_dependencies_;
     }

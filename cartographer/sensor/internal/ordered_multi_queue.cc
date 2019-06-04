@@ -43,12 +43,12 @@ OrderedMultiQueue::OrderedMultiQueue() {}
 OrderedMultiQueue::~OrderedMultiQueue() {
   for (auto& entry : queues_) {
     CHECK(entry.second.finished);
-  }
+  }// 检查队列中所有数据均被处理完
 }
 
 void OrderedMultiQueue::AddQueue(const QueueKey& queue_key, Callback callback) {
   CHECK_EQ(queues_.count(queue_key), 0);
-  queues_[queue_key].callback = std::move(callback);
+  queues_[queue_key].callback = std::move(callback); /// handle sensor data
 }
 
 void OrderedMultiQueue::MarkQueueAsFinished(const QueueKey& queue_key) {
@@ -66,7 +66,7 @@ void OrderedMultiQueue::Add(const QueueKey& queue_key,
   if (it == queues_.end()) {
     LOG_EVERY_N(WARNING, 1000)
         << "Ignored data for queue: '" << queue_key << "'";
-    return;
+    return; /// 若不存对应的队列，忽略该数据
   }
   it->second.queue.Push(std::move(data));
   Dispatch();
@@ -89,6 +89,10 @@ QueueKey OrderedMultiQueue::GetBlocker() const {
   return blocker_;
 }
 
+/**
+ * 处理队列中数据：sort数据 ----- drop不合适的数据
+ *  ---- 没理清这里的逻辑0^0
+ */
 void OrderedMultiQueue::Dispatch() {
   while (true) {
     const Data* next_data = nullptr;
@@ -97,7 +101,7 @@ void OrderedMultiQueue::Dispatch() {
     for (auto it = queues_.begin(); it != queues_.end();) {
       const auto* data = it->second.queue.Peek<Data>();
       if (data == nullptr) {
-        if (it->second.finished) {
+        if (it->second.finished) {// 队列为空且被标记为finished，则删除该队列
           queues_.erase(it++);
           continue;
         }
@@ -112,7 +116,7 @@ void OrderedMultiQueue::Dispatch() {
       CHECK_LE(last_dispatched_time_, next_data->GetTime())
           << "Non-sorted data added to queue: '" << it->first << "'";
       ++it;
-    }
+    } /// 获取所有队列中最老的数据
     if (next_data == nullptr) {
       CHECK(queues_.empty());
       return;
@@ -123,7 +127,7 @@ void OrderedMultiQueue::Dispatch() {
     const common::Time common_start_time =
         GetCommonStartTime(next_queue_key.trajectory_id);
 
-    if (next_data->GetTime() >= common_start_time) {
+    if (next_data->GetTime() >= common_start_time) { /// 数据在对应trajectory创建之后到达的
       // Happy case, we are beyond the 'common_start_time' already.
       last_dispatched_time_ = next_data->GetTime();
       next_queue->callback(next_queue->queue.Pop());
@@ -158,6 +162,9 @@ void OrderedMultiQueue::CannotMakeProgress(const QueueKey& queue_key) {
   }
 }
 
+/*
+ * 记录每条trajectory 传感器数据开始时间
+ */
 common::Time OrderedMultiQueue::GetCommonStartTime(const int trajectory_id) {
   auto emplace_result = common_start_time_per_trajectory_.emplace(
       trajectory_id, common::Time::min());

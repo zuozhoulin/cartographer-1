@@ -30,6 +30,8 @@ sensor::TimedPointCloudOriginData RangeDataCollator::AddRangeData(
     const sensor::TimedPointCloudData& timed_point_cloud_data) {
   CHECK_NE(expected_sensor_ids_.count(sensor_id), 0);
   // TODO(gaschler): These two cases can probably be one.
+
+
   if (id_to_pending_data_.count(sensor_id) != 0) {
     current_start_ = current_end_;
     // When we have two messages of the same sensor, move forward the older of
@@ -53,7 +55,8 @@ sensor::TimedPointCloudOriginData RangeDataCollator::AddRangeData(
   return CropAndMerge();
 }
 
-sensor::TimedPointCloudOriginData RangeDataCollator::CropAndMerge() {
+sensor::TimedPointCloudOriginData RangeDataCollator::CropAndMerge()
+{
   sensor::TimedPointCloudOriginData result{current_end_, {}, {}};
   bool warned_for_dropped_points = false;
   for (auto it = id_to_pending_data_.begin();

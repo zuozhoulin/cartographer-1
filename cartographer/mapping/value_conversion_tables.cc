@@ -23,17 +23,19 @@ namespace cartographer {
 namespace mapping {
 namespace {
 
+/** 2^15 = 32768 **/
 constexpr uint16 kUpdateMarker = 1u << 15;
 
 // 0 is unknown, [1, 32767] maps to [lower_bound, upper_bound].
-float SlowValueToBoundedFloat(const uint16 value, const uint16 unknown_value,
-                              const float unknown_result,
-                              const float lower_bound,
-                              const float upper_bound) {
+float SlowValueToBoundedFloat(const uint16 value,
+                              const uint16 unknown_value,/*0*/
+                              const float unknown_result,/*0.9*/
+                              const float lower_bound,/*0.1*/
+                              const float upper_bound/*0.9*/) {
   CHECK_LE(value, 32767);
   if (value == unknown_value) return unknown_result;
   const float kScale = (upper_bound - lower_bound) / 32766.f;
-  return value * kScale + (lower_bound - kScale);
+  return value * kScale + (lower_bound - kScale);/// lower_bound + (value-1) * kScalse  这样好理解些....
 }
 
 std::unique_ptr<std::vector<float>> PrecomputeValueToBoundedFloat(
@@ -44,19 +46,26 @@ std::unique_ptr<std::vector<float>> PrecomputeValueToBoundedFloat(
   result->reserve(num_values);
   for (size_t value = 0; value != num_values; ++value) {
     result->push_back(SlowValueToBoundedFloat(
-        static_cast<uint16>(value) & ~kUpdateMarker, unknown_value,
-        unknown_result, lower_bound, upper_bound));
+        static_cast<uint16>(value) & ~kUpdateMarker, unknown_value/*0*/,
+        unknown_result/*0.9*/, lower_bound/*0.1*/, upper_bound/*0.9*/));
   }
   return result;
 }
 }  // namespace
 
+/**
+ *  获取转换表，实际也是添加相关表的接口。
+ * @param unknown_result
+ * @param lower_bound
+ * @param upper_bound
+ * @return
+ */
 const std::vector<float>* ValueConversionTables::GetConversionTable(
     float unknown_result, float lower_bound, float upper_bound) {
   std::tuple<float, float, float> bounds =
       std::make_tuple(unknown_result, lower_bound, upper_bound);
   auto lookup_table_iterator = bounds_to_lookup_table_.find(bounds);
-  if (lookup_table_iterator == bounds_to_lookup_table_.end()) {
+  if (lookup_table_iterator == bounds_to_lookup_table_.end()) { /// 若这样的table不存在，则新建一个
     auto insertion_result = bounds_to_lookup_table_.emplace(
         bounds, PrecomputeValueToBoundedFloat(0, unknown_result, lower_bound,
                                               upper_bound));

@@ -29,6 +29,12 @@ namespace mapping {
 
 namespace {
 
+/**
+ *  这里是关于概率值相关的一堆东西
+ *
+ *
+ */
+
 inline uint16 BoundedFloatToValue(const float float_value,
                                   const float lower_bound,
                                   const float upper_bound) {
@@ -62,9 +68,9 @@ inline float CorrespondenceCostToProbability(const float correspondence_cost) {
 }
 
 constexpr float kMinProbability = 0.1f;
-constexpr float kMaxProbability = 1.f - kMinProbability;
-constexpr float kMinCorrespondenceCost = 1.f - kMaxProbability;
-constexpr float kMaxCorrespondenceCost = 1.f - kMinProbability;
+constexpr float kMaxProbability = 1.f - kMinProbability;  // 0.9
+constexpr float kMinCorrespondenceCost = 1.f - kMaxProbability; // 0.1
+constexpr float kMaxCorrespondenceCost = 1.f - kMinProbability; // 0.9
 
 // Clamps probability to be in the range [kMinProbability, kMaxProbability].
 inline float ClampProbability(const float probability) {

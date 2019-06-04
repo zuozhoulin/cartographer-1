@@ -40,6 +40,9 @@ namespace mapping {
 proto::SubmapsOptions2D CreateSubmapsOptions2D(
     common::LuaParameterDictionary* parameter_dictionary);
 
+/**
+ * 2d 的submap
+ */
 class Submap2D : public Submap {
  public:
   Submap2D(const Eigen::Vector2f& origin, std::unique_ptr<Grid2D> grid,
@@ -76,6 +79,8 @@ class Submap2D : public Submap {
 // considered initialized: the old submap is no longer changed, the "new" submap
 // is now the "old" submap and is used for scan-to-map matching. Moreover, a
 // "new" submap gets created. The "old" submap is forgotten by this object.
+/// 上面解释很清楚了 ---- 维护两个submap（new & old）,新的scan到来，与old进行匹配，同时scan插入到old&new两个submap中。
+/// 当old不变时，old map扔进回环检测，new map升级为old map用于与scan匹配，如此迭代
 class ActiveSubmaps2D {
  public:
   explicit ActiveSubmaps2D(const proto::SubmapsOptions2D& options);
@@ -96,9 +101,9 @@ class ActiveSubmaps2D {
   void AddSubmap(const Eigen::Vector2f& origin);
 
   const proto::SubmapsOptions2D options_;
-  std::vector<std::shared_ptr<Submap2D>> submaps_;
-  std::unique_ptr<RangeDataInserterInterface> range_data_inserter_;
-  ValueConversionTables conversion_tables_;
+  std::vector<std::shared_ptr<Submap2D>> submaps_;  /// old —— new 子图 ， old 用于匹配
+  std::unique_ptr<RangeDataInserterInterface> range_data_inserter_; /// 用于向submap中插入激光点
+  ValueConversionTables conversion_tables_; ///
 };
 
 }  // namespace mapping

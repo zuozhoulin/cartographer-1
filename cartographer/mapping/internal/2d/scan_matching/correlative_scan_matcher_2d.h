@@ -32,6 +32,8 @@ namespace scan_matching {
 typedef std::vector<Eigen::Array2i> DiscreteScan2D;
 
 // Describes the search space.
+/// 这个类记录了相关匹配的搜索参数,根据分辨率和最大激光点距离计算角度增量及搜索窗口
+/// 这里是以网格为单位的
 struct SearchParameters {
   // Linear search window in pixel offsets; bounds are inclusive.
   struct LinearBounds {
@@ -53,7 +55,7 @@ struct SearchParameters {
                    const CellLimits& cell_limits);
 
   int num_angular_perturbations;
-  double angular_perturbation_step_size;
+  double angular_perturbation_step_size; ///
   double resolution;
   int num_scans;
   std::vector<LinearBounds> linear_bounds;  // Per rotated scans.
@@ -87,10 +89,11 @@ struct Candidate2D {
   int scan_index = 0;
 
   // Linear offset from the initial pose.
-  int x_index_offset = 0;
+  int x_index_offset = 0; /// 单位是网格
   int y_index_offset = 0;
 
   // Pose of this Candidate2D relative to the initial pose.
+  // pose结果增量 ---> 相对于correlative scan matcher输入的初始位姿
   double x = 0.;
   double y = 0.;
   double orientation = 0.;

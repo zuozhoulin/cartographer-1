@@ -61,6 +61,7 @@ namespace mapping {
 // Each node has been matched against one or more submaps (adding a constraint
 // for each match), both poses of nodes and of submaps are to be optimized.
 // All constraints are between a submap i and a node j.
+/// SPA 在submap中的扩展
 class PoseGraph2D : public PoseGraph {
  public:
   PoseGraph2D(
@@ -77,6 +78,21 @@ class PoseGraph2D : public PoseGraph {
   // node data was inserted into the 'insertion_submaps'. If
   // 'insertion_submaps.front().finished()' is 'true', data was inserted into
   // this submap for the last time.
+  /**
+   * 每帧scan的匹配结果就是从这里添加进来。 下面是添加的具体内容。
+   *    TrajectoryNode::Data {
+   *        Time  time;
+   *        Quaterniond gravity_alignment;
+   *        PointCloud  filtered_gravity_aligned_point_cloud;
+   *        Rigid3d     local_pose;
+   *    }
+   *
+   *    Submap_2D {
+   *        Grid2D *grid_;
+   *        Type   *conversion_table;
+   *    }
+   *
+   * **/
   NodeId AddNode(
       std::shared_ptr<const TrajectoryNode::Data> constant_data,
       int trajectory_id,

@@ -62,7 +62,7 @@ class ProbabilityGrid : public Grid2D {
       transform::Rigid3d local_pose) const override;
 
  private:
-  ValueConversionTables* conversion_tables_;
+  ValueConversionTables* conversion_tables_;/// 与SubmapxD ActiveSubmapxD 中的是一样的
 };
 
 }  // namespace mapping

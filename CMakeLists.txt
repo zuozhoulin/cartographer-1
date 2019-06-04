@@ -24,6 +24,7 @@ set(CARTOGRAPHER_SOVERSION ${CARTOGRAPHER_MAJOR_VERSION}.${CARTOGRAPHER_MINOR_VE
 option(BUILD_GRPC "build Cartographer gRPC support" false)
 set(CARTOGRAPHER_HAS_GRPC ${BUILD_GRPC})
 option(BUILD_PROMETHEUS "build Prometheus monitoring support" false)
+set(CMAKE_BUILD_TYPE "Release")
 
 include("${PROJECT_SOURCE_DIR}/cmake/functions.cmake")
 google_initialize_cartographer_project()

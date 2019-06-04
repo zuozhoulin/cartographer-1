@@ -134,13 +134,18 @@ void Submap2D::ToResponseProto(
   grid()->DrawToSubmapTexture(texture, local_pose());
 }
 
+/**
+ * 当前子图插入激光点
+ * @param range_data  待插入的激光点
+ * @param range_data_inserter   激光点插入器
+ */
 void Submap2D::InsertRangeData(
     const sensor::RangeData& range_data,
     const RangeDataInserterInterface* range_data_inserter) {
   CHECK(grid_);
   CHECK(!insertion_finished());
   range_data_inserter->Insert(range_data, grid_.get());
-  set_num_range_data(num_range_data() + 1);
+  set_num_range_data(num_range_data() + 1); // 记录子图中插入了多少组激光点数据
 }
 
 void Submap2D::Finish() {
@@ -158,17 +163,22 @@ std::vector<std::shared_ptr<const Submap2D>> ActiveSubmaps2D::submaps() const {
                                                       submaps_.end());
 }
 
+/**
+ * 将激光点数据更新到两个子图中去
+ * @param range_data  待加入的激光点数据
+ * @return  返回当前的所有 active submap
+ */
 std::vector<std::shared_ptr<const Submap2D>> ActiveSubmaps2D::InsertRangeData(
     const sensor::RangeData& range_data) {
-  if (submaps_.empty() ||
+  if (submaps_.empty() ||   /** 没有子图或者“new”中已经有足够多的激光点数据的时候，添加新的子图 **/
       submaps_.back()->num_range_data() == options_.num_range_data()) {
     AddSubmap(range_data.origin.head<2>());
   }
-  for (auto& submap : submaps_) {
+  for (auto& submap : submaps_) {/** 所有子图都插入当前激光点数据 **/
     submap->InsertRangeData(range_data, range_data_inserter_.get());
   }
   if (submaps_.front()->num_range_data() == 2 * options_.num_range_data()) {
-    submaps_.front()->Finish();
+    submaps_.front()->Finish(); /* old中的激光包数量到一定数量时，设置old为finished */
   }
   return submaps();
 }
@@ -222,7 +232,7 @@ std::unique_ptr<GridInterface> ActiveSubmaps2D::CreateGrid(
 }
 
 void ActiveSubmaps2D::AddSubmap(const Eigen::Vector2f& origin) {
-  if (submaps_.size() >= 2) {
+  if (submaps_.size() >= 2) { /// 仅维护两个子图 old & new，添加新的子图时，删除‘old’，‘new’变成‘old’
     // This will crop the finished Submap before inserting a new Submap to
     // reduce peak memory usage a bit.
     CHECK(submaps_.front()->insertion_finished());

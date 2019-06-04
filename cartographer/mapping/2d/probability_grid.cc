@@ -58,9 +58,9 @@ void ProbabilityGrid::SetProbability(const Eigen::Array2i& cell_index,
 bool ProbabilityGrid::ApplyLookupTable(const Eigen::Array2i& cell_index,
                                        const std::vector<uint16>& table) {
   DCHECK_EQ(table.size(), kUpdateMarker);
-  const int flat_index = ToFlatIndex(cell_index);
+  const int flat_index = ToFlatIndex(cell_index);// 获取对应网格的 index
   uint16* cell = &(*mutable_correspondence_cost_cells())[flat_index];
-  if (*cell >= kUpdateMarker) {
+  if (*cell >= kUpdateMarker) { /// 2^15
     return false;
   }
   mutable_update_indices()->push_back(flat_index);

@@ -46,6 +46,7 @@ class BlockingQueue {
   explicit BlockingQueue(const size_t queue_size) : queue_size_(queue_size) {}
 
   // Pushes a value onto the queue. Blocks if the queue is full.
+  /// push一个数据进队列，若队列已满，则阻塞
   void Push(T t) {
     const auto predicate = [this]() EXCLUSIVE_LOCKS_REQUIRED(mutex_) {
       return QueueNotFullCondition();
@@ -56,6 +57,7 @@ class BlockingQueue {
   }
 
   // Like push, but returns false if 'timeout' is reached.
+  ///  等待NotFull条件为真时间过长，则放弃push，返回false
   bool PushWithTimeout(T t, const common::Duration timeout) {
     const auto predicate = [this]() EXCLUSIVE_LOCKS_REQUIRED(mutex_) {
       return QueueNotFullCondition();

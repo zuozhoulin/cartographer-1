@@ -53,6 +53,7 @@ void CastRays(const sensor::RangeData& range_data,
               const std::vector<uint16>& hit_table,
               const std::vector<uint16>& miss_table,
               const bool insert_free_space, ProbabilityGrid* probability_grid) {
+  /// 网格可能不够大来包含所有激光点数据，可能需要增长
   GrowAsNeeded(range_data, probability_grid);
 
   const MapLimits& limits = probability_grid->limits();
@@ -121,6 +122,11 @@ ProbabilityGridRangeDataInserter2D::ProbabilityGridRangeDataInserter2D(
       miss_table_(ComputeLookupTableToApplyCorrespondenceCostOdds(
           Odds(options.miss_probability()))) {}
 
+/**
+ *  将激光点更新到地图中
+ * @param range_data  待更新的激光点 -- 已转换为local frame下的坐标
+ * @param grid  网格地图
+ */
 void ProbabilityGridRangeDataInserter2D::Insert(
     const sensor::RangeData& range_data, GridInterface* const grid) const {
   ProbabilityGrid* const probability_grid = static_cast<ProbabilityGrid*>(grid);

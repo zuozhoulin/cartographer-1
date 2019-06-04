@@ -71,6 +71,7 @@ PoseGraph2D::~PoseGraph2D() {
   CHECK(work_queue_ == nullptr);
 }
 
+
 std::vector<SubmapId> PoseGraph2D::InitializeGlobalSubmapPoses(
     const int trajectory_id, const common::Time time,
     const std::vector<std::shared_ptr<const Submap2D>>& insertion_submaps) {
@@ -122,12 +123,21 @@ std::vector<SubmapId> PoseGraph2D::InitializeGlobalSubmapPoses(
   return {front_submap_id, last_submap_id};
 }
 
+/**
+ *  添加Node，
+ * @param constant_data     Node的数据
+ * @param trajectory_id
+ * @param insertion_submaps 对应的Submap
+ * @param optimized_pose    Node的全局位姿
+ * @return 返回NodeId
+ */
 NodeId PoseGraph2D::AppendNode(
     std::shared_ptr<const TrajectoryNode::Data> constant_data,
     const int trajectory_id,
     const std::vector<std::shared_ptr<const Submap2D>>& insertion_submaps,
     const transform::Rigid3d& optimized_pose) {
   absl::MutexLock locker(&mutex_);
+
   AddTrajectoryIfNeeded(trajectory_id);
   if (!CanAddWorkItemModifying(trajectory_id)) {
     LOG(WARNING) << "AddNode was called for finished or deleted trajectory.";
@@ -154,9 +164,11 @@ NodeId PoseGraph2D::AddNode(
     std::shared_ptr<const TrajectoryNode::Data> constant_data,
     const int trajectory_id,
     const std::vector<std::shared_ptr<const Submap2D>>& insertion_submaps) {
+    /// 计算这个Node的global位姿
   const transform::Rigid3d optimized_pose(
       GetLocalToGlobalTransform(trajectory_id) * constant_data->local_pose);
 
+  /** 添加新的Node **/
   const NodeId node_id = AppendNode(constant_data, trajectory_id,
                                     insertion_submaps, optimized_pose);
   // We have to check this here, because it might have changed by the time we
@@ -170,14 +182,27 @@ NodeId PoseGraph2D::AddNode(
   return node_id;
 }
 
+/**
+ * 就是将work_item添加进work_queue，其中work_item有15种之多....对应处理不同情况。
+ * 其中只有AddNode(),FinishTrajectory(),RunFinalOptimization()
+ * 这三个函数中添加的work_item会返回 kRunOptimization
+ * @param work_item
+ */
 void PoseGraph2D::AddWorkItem(
     const std::function<WorkItem::Result()>& work_item) {
   absl::MutexLock locker(&work_queue_mutex_);
+  // 若工作队列为空，则新建一个，并将DrainWorkQueue()封装成Task安排进线程池
   if (work_queue_ == nullptr) {
     work_queue_ = absl::make_unique<WorkQueue>();
     auto task = absl::make_unique<common::Task>();
     task->SetWorkItem([this]() { DrainWorkQueue(); });
     thread_pool_->Schedule(std::move(task));
+    /** 线程池中第一个Task就是 DrainWorkQueue(),相当于执行任务的触发器
+     *  work_queue_为空指针有两种情况，一是初始化时为空，二是线程池执行
+     *  1个Task结束后，需要从work_queue_中取出一个work_item封装成Task，
+     *  若此时work_queue队列为empty，则在DrainWorkQueue()中会将work_queue
+     *  指针重置为空指针。
+     * **/
   }
   const auto now = std::chrono::steady_clock::now();
   work_queue_->push_back({now, work_item});
@@ -508,6 +533,9 @@ void PoseGraph2D::HandleWorkQueue(
   DrainWorkQueue();
 }
 
+/***
+ *  取出工作队列中的 work_item 并执行，并将HandleWorkQueue（）封装成Task安排进线程池。
+ */
 void PoseGraph2D::DrainWorkQueue() {
   bool process_work_queue = true;
   size_t work_queue_size;
@@ -523,10 +551,19 @@ void PoseGraph2D::DrainWorkQueue() {
       work_queue_->pop_front();
       work_queue_size = work_queue_->size();
     }
+    /** 获取工作队列中最前面的task并执行。
+     * 当work_item()返回不优化的结果时退出循环，不在继续处理队列中剩下的work_item **/
     process_work_queue = work_item() == WorkItem::Result::kDoNotRunOptimization;
   }
   LOG(INFO) << "Remaining work items in queue: " << work_queue_size;
+
+
   // We have to optimize again.
+  // 将HandleWorkQueue()作为回调函数传入到constraint_builder_中，而输入的result由constraint_builder_提供，
+  // 并在里面将这个函数封装成Task传入线程池并Schedule()。
+  // HandleWorkQueue() 最后又调用本函数，将任务队列中的下一个work_item封装成Task交给线程池，如此迭代循环。
+  // 若任务队列为空，则reset work_queue指针，退出这样的循环。当又有新的work_item添加进work_queue中时，
+  // 见Add_work_item()函数，此时work_queue_指针为空，重新生成work_queue，重新触发，往线程池中添加任务。
   constraint_builder_.WhenDone(
       [this](const constraints::ConstraintBuilder2D::Result& result) {
         HandleWorkQueue(result);
@@ -996,6 +1033,7 @@ std::vector<PoseGraphInterface::Constraint> PoseGraph2D::constraints() const {
   return result;
 }
 
+/* 如果需要，则设置本from_trajectory_id的初始位姿，默认为 I */
 void PoseGraph2D::SetInitialTrajectoryPose(const int from_trajectory_id,
                                            const int to_trajectory_id,
                                            const transform::Rigid3d& pose,

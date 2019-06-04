@@ -49,32 +49,44 @@ class GlobalTrajectoryBuilder : public mapping::TrajectoryBuilderInterface {
   GlobalTrajectoryBuilder(const GlobalTrajectoryBuilder&) = delete;
   GlobalTrajectoryBuilder& operator=(const GlobalTrajectoryBuilder&) = delete;
 
+  /** 这个函数是添加 点云数据 时的处理过程，与其他数据处理过程不一样，这里是关键的数据处理函数 **/
   void AddSensorData(
       const std::string& sensor_id,
       const sensor::TimedPointCloudData& timed_point_cloud_data) override {
     CHECK(local_trajectory_builder_)
         << "Cannot add TimedPointCloudData without a LocalTrajectoryBuilder.";
+
+
+    /// 传感器数据传入 LocalTrajectoryBuilder 进行位姿求解 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     std::unique_ptr<typename LocalTrajectoryBuilder::MatchingResult>
         matching_result = local_trajectory_builder_->AddRangeData(
             sensor_id, timed_point_cloud_data);
+
+
     if (matching_result == nullptr) {
       // The range data has not been fully accumulated yet.
       return;
     }
-    kLocalSlamMatchingResults->Increment();
+
+    /// pose graph 添加节点,将匹配结果送到pose graph线程进行处理。
+    kLocalSlamMatchingResults->Increment(); /// 啥也没干的函数
     std::unique_ptr<InsertionResult> insertion_result;
     if (matching_result->insertion_result != nullptr) {
-      kLocalSlamInsertionResults->Increment();
+      kLocalSlamInsertionResults->Increment();/// 啥也没干的函数
       auto node_id = pose_graph_->AddNode(
           matching_result->insertion_result->constant_data, trajectory_id_,
           matching_result->insertion_result->insertion_submaps);
       CHECK_EQ(node_id.trajectory_id, trajectory_id_);
+
+      ///  nnd，注意与 LocalTrajectoryBuilder2D::InsertionResult 区分，就是多了个NodeId
       insertion_result = absl::make_unique<InsertionResult>(InsertionResult{
           node_id, matching_result->insertion_result->constant_data,
           std::vector<std::shared_ptr<const Submap>>(
               matching_result->insertion_result->insertion_submaps.begin(),
               matching_result->insertion_result->insertion_submaps.end())});
     }
+
+    /// 位姿求解成功后回调处理函数
     if (local_slam_result_callback_) {
       local_slam_result_callback_(
           trajectory_id_, matching_result->time, matching_result->local_pose,
@@ -83,6 +95,7 @@ class GlobalTrajectoryBuilder : public mapping::TrajectoryBuilderInterface {
     }
   }
 
+  /** imu数据，仅添加到local_trajectory_builder_和pose_graph_， 而不进一步处理 **/
   void AddSensorData(const std::string& sensor_id,
                      const sensor::ImuData& imu_data) override {
     if (local_trajectory_builder_) {
@@ -91,6 +104,7 @@ class GlobalTrajectoryBuilder : public mapping::TrajectoryBuilderInterface {
     pose_graph_->AddImuData(trajectory_id_, imu_data);
   }
 
+/** odom数据，仅添加到local_trajectory_builder_和pose_graph_， 而不进一步处理 **/
   void AddSensorData(const std::string& sensor_id,
                      const sensor::OdometryData& odometry_data) override {
     CHECK(odometry_data.pose.IsValid()) << odometry_data.pose;
@@ -99,7 +113,7 @@ class GlobalTrajectoryBuilder : public mapping::TrajectoryBuilderInterface {
     }
     pose_graph_->AddOdometryData(trajectory_id_, odometry_data);
   }
-
+/** FixedFramePose数据，仅添加到pose_graph_， 影响pose graph优化，而对local_trajectory_builder无影响 **/
   void AddSensorData(
       const std::string& sensor_id,
       const sensor::FixedFramePoseData& fixed_frame_pose) override {
@@ -110,11 +124,13 @@ class GlobalTrajectoryBuilder : public mapping::TrajectoryBuilderInterface {
     pose_graph_->AddFixedFramePoseData(trajectory_id_, fixed_frame_pose);
   }
 
+/** Landmark 数据，仅添加到pose_graph_， 影响pose graph优化，而对local_trajectory_builder无影响 **/
   void AddSensorData(const std::string& sensor_id,
                      const sensor::LandmarkData& landmark_data) override {
     pose_graph_->AddLandmarkData(trajectory_id_, landmark_data);
   }
 
+/** 将local_trajectory_builder的结果添加到 pose_graph_  ||  --> 在local_slam_result_xd.cc 中调用.. **/
   void AddLocalSlamResultData(std::unique_ptr<mapping::LocalSlamResultData>
                                   local_slam_result_data) override {
     CHECK(!local_trajectory_builder_) << "Can't add LocalSlamResultData with "

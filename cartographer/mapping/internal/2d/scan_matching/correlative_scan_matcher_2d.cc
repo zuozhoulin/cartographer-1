@@ -108,10 +108,11 @@ std::vector<sensor::PointCloud> GenerateRotatedScans(
   return rotated_scans;
 }
 
+/** 获取点云在初始translation后在submap的网格坐标 **/
 std::vector<DiscreteScan2D> DiscretizeScans(
     const MapLimits& map_limits, const std::vector<sensor::PointCloud>& scans,
     const Eigen::Translation2f& initial_translation) {
-  std::vector<DiscreteScan2D> discrete_scans;
+  std::vector<DiscreteScan2D> discrete_scans;  // DiscreteScan2D = std::vector<Eigen::Array2i>
   discrete_scans.reserve(scans.size());
   for (const sensor::PointCloud& scan : scans) {
     discrete_scans.emplace_back();

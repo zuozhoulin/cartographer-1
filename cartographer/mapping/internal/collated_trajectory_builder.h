@@ -36,9 +36,13 @@ namespace mapping {
 
 // Collates sensor data using a sensor::CollatorInterface, then passes it on to
 // a mapping::TrajectoryBuilderInterface which is common for 2D and 3D.
+/**
+ *  数据接口，添加传感器数据到算法中。包含6种数据：TimedPointCloud、Imu、Odometry、FixedFramePose、LandMark
+ *  map_builder_中，其中的trajectory_builder对象实际这个类
+ */
 class CollatedTrajectoryBuilder : public TrajectoryBuilderInterface {
  public:
-  using SensorId = TrajectoryBuilderInterface::SensorId;
+  using SensorId = TrajectoryBuilderInterface::SensorId; // 提示何种类型的sensor
 
   CollatedTrajectoryBuilder(
       const proto::TrajectoryBuilderOptions& trajectory_options,
@@ -50,6 +54,11 @@ class CollatedTrajectoryBuilder : public TrajectoryBuilderInterface {
   CollatedTrajectoryBuilder(const CollatedTrajectoryBuilder&) = delete;
   CollatedTrajectoryBuilder& operator=(const CollatedTrajectoryBuilder&) =
       delete;
+
+
+  /** 下面的重载函数，都是对传入的数据进行封装后，统一调用AddData函数，
+   * 然后其又直接调用sensor_collator_->AddSensorData(trajectory_id_, sensor::Data)函数
+  **/
 
   void AddSensorData(
       const std::string& sensor_id,
@@ -98,11 +107,11 @@ class CollatedTrajectoryBuilder : public TrajectoryBuilderInterface {
   void HandleCollatedSensorData(const std::string& sensor_id,
                                 std::unique_ptr<sensor::Data> data);
 
-  sensor::CollatorInterface* const sensor_collator_;
+  sensor::CollatorInterface* const sensor_collator_; /// 就是map builder中的 sensor_collator
   const bool collate_landmarks_;
   const bool collate_fixed_frame_;
   const int trajectory_id_;
-  std::unique_ptr<TrajectoryBuilderInterface> wrapped_trajectory_builder_;
+  std::unique_ptr<TrajectoryBuilderInterface> wrapped_trajectory_builder_; /// 为GlobalTrajectoryBuilder.
 
   // Time at which we last logged the rates of incoming sensor data.
   std::chrono::steady_clock::time_point last_logging_time_;

@@ -63,10 +63,10 @@ Grid2D::Grid2D(const MapLimits& limits, float min_correspondence_cost,
     : limits_(limits),
       correspondence_cost_cells_(
           limits_.cell_limits().num_x_cells * limits_.cell_limits().num_y_cells,
-          kUnknownCorrespondenceValue),
+          kUnknownCorrespondenceValue), /// 初始化所有网格
       min_correspondence_cost_(min_correspondence_cost),
       max_correspondence_cost_(max_correspondence_cost),
-      value_to_correspondence_cost_table_(conversion_tables->GetConversionTable(
+      value_to_correspondence_cost_table_(conversion_tables->GetConversionTable( /* 初始化look_up table */
           max_correspondence_cost, min_correspondence_cost,
           max_correspondence_cost)) {
   CHECK_LT(min_correspondence_cost_, max_correspondence_cost_);
@@ -127,11 +127,12 @@ void Grid2D::GrowLimits(const Eigen::Vector2f& point) {
              {kUnknownCorrespondenceValue});
 }
 
-void Grid2D::GrowLimits(const Eigen::Vector2f& point,
-                        const std::vector<std::vector<uint16>*>& grids,
+void Grid2D::GrowLimits(const Eigen::Vector2f& point,/* 网格中需包含的点 */
+                        const std::vector<std::vector<uint16>*>& grids,/* 网格 */
                         const std::vector<uint16>& grids_unknown_cell_values) {
   CHECK(update_indices_.empty());
-  while (!limits_.Contains(limits_.GetCellIndex(point))) {
+  while (!limits_.Contains(limits_.GetCellIndex(point))) // point在网格外
+  {
     const int x_offset = limits_.cell_limits().num_x_cells / 2;
     const int y_offset = limits_.cell_limits().num_y_cells / 2;
     const MapLimits new_limits(

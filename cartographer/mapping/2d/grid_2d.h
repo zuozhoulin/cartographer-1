@@ -116,11 +116,11 @@ class Grid2D : public GridInterface {
   }
 
  private:
-  MapLimits limits_;
-  std::vector<uint16> correspondence_cost_cells_;
-  float min_correspondence_cost_;
-  float max_correspondence_cost_;
-  std::vector<int> update_indices_;
+  MapLimits limits_; /// 包含 resolution 、 x_cell_num,y_cell_num 、 和坐标系最大值
+  std::vector<uint16> correspondence_cost_cells_; /// 这里记录的是 实际的网格值 !!!!!!! 正常范围是[1, 32767] , 而0表示 unknown
+  float min_correspondence_cost_;   // minimum possible correspondence cost.
+  float max_correspondence_cost_;   // maximum possible correspondence cost.
+  std::vector<int> update_indices_; ///
 
   // Bounding box of known cells to efficiently compute cropping limits.
   Eigen::AlignedBox2i known_cells_box_;

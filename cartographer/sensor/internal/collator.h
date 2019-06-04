@@ -30,6 +30,11 @@
 namespace cartographer {
 namespace sensor {
 
+
+/**
+ * 传感器数据 buffer，
+ * 其中的queue包含处理这些数据的回调函数
+ */
 class Collator : public CollatorInterface {
  public:
   Collator() {}
@@ -52,10 +57,10 @@ class Collator : public CollatorInterface {
 
  private:
   // Queue keys are a pair of trajectory ID and sensor identifier.
-  OrderedMultiQueue queue_;
+  OrderedMultiQueue queue_;  /// 数据buffer
 
   // Map of trajectory ID to all associated QueueKeys.
-  absl::flat_hash_map<int, std::vector<QueueKey>> queue_keys_;
+  absl::flat_hash_map<int, std::vector<QueueKey>> queue_keys_; /// id 和 对应的 QueueKey
 };
 
 }  // namespace sensor

@@ -31,6 +31,7 @@
 namespace cartographer {
 namespace sensor {
 
+/** Queue的关键词 **/
 struct QueueKey {
   int trajectory_id;
   std::string sensor_id;
@@ -48,7 +49,7 @@ struct QueueKey {
 // This class is thread-compatible.
 class OrderedMultiQueue {
  public:
-  using Callback = std::function<void(std::unique_ptr<Data>)>;
+  using Callback = std::function<void(std::unique_ptr<Data>)>; /// 数据处理回调函数
 
   OrderedMultiQueue();
   OrderedMultiQueue(OrderedMultiQueue&& queue) = default;
@@ -57,10 +58,14 @@ class OrderedMultiQueue {
 
   // Adds a new queue with key 'queue_key' which must not already exist.
   // 'callback' will be called whenever data from this queue can be dispatched.
+  /** 添加一个新的数据队列（buffer），该队列有两个属性，key & callback。key标记队列的唯一性，
+   *  即缓存哪条trajectory的哪种类型的传感器数据；callback处理缓存中的完整数据包。
+   *  ------- 这个函数在 collator.AddTrajectory（）函数中调用    **/
   void AddQueue(const QueueKey& queue_key, Callback callback);
 
   // Marks a queue as finished, i.e. no further data can be added. The queue
   // will be removed once the last piece of data from it has been dispatched.
+  /** 标记一个队列，提示其停止接收新的数据 **/
   void MarkQueueAsFinished(const QueueKey& queue_key);
 
   // Adds 'data' to a queue with the given 'queue_key'. Data must be added
@@ -79,7 +84,7 @@ class OrderedMultiQueue {
  private:
   struct Queue {
     common::BlockingQueue<std::unique_ptr<Data>> queue;
-    Callback callback;
+    Callback callback; /// handle sensor data
     bool finished = false;
   };
 

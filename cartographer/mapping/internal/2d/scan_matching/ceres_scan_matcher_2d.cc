@@ -60,6 +60,15 @@ CeresScanMatcher2D::CeresScanMatcher2D(
 
 CeresScanMatcher2D::~CeresScanMatcher2D() {}
 
+/**
+ *  优化 correlation scan matcher 计算得到的位姿。
+ * @param target_translation    根据extrainpolator获取的位姿的translation
+ * @param initial_pose_estimate csm计算得到的位姿
+ * @param point_cloud           对应的点云数据
+ * @param grid                  网格
+ * @param pose_estimate         输出的位姿
+ * @param summary               ceres优化过程数据
+ */
 void CeresScanMatcher2D::Match(const Eigen::Vector2d& target_translation,
                                const transform::Rigid2d& initial_pose_estimate,
                                const sensor::PointCloud& point_cloud,
@@ -89,7 +98,7 @@ void CeresScanMatcher2D::Match(const Eigen::Vector2d& target_translation,
           nullptr /* loss function */, ceres_pose_estimate);
       break;
   }
-  CHECK_GT(options_.translation_weight(), 0.);
+  CHECK_GT(options_.translation_weight(), 0.);/// 这里为什么使用 target_translation ??
   problem.AddResidualBlock(
       TranslationDeltaCostFunctor2D::CreateAutoDiffCostFunction(
           options_.translation_weight(), target_translation),

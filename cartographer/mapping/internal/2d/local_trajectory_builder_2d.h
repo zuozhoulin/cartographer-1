@@ -41,6 +41,10 @@ namespace mapping {
 // Wires up the local SLAM stack (i.e. pose extrapolator, scan matching, etc.)
 // without loop closure.
 // TODO(gaschler): Add test for this class similar to the 3D test.
+/**
+ * Local slam 部分，传感器数据喂给此处，产生结果
+ * 此部分包含pose extrapolator, scan matching 等等，无回环。2d
+ */
 class LocalTrajectoryBuilder2D {
  public:
   struct InsertionResult {
@@ -99,15 +103,15 @@ class LocalTrajectoryBuilder2D {
   // Lazily constructs a PoseExtrapolator.
   void InitializeExtrapolator(common::Time time);
 
-  const proto::LocalTrajectoryBuilderOptions2D options_;
-  ActiveSubmaps2D active_submaps_;
+  const proto::LocalTrajectoryBuilderOptions2D options_;  /// local builder 配置参数
+  ActiveSubmaps2D active_submaps_;            /// 激活的submaps（仍会改变的） -- old and new 两个
 
-  MotionFilter motion_filter_;
+  MotionFilter motion_filter_;                  ///运动滤波器
   scan_matching::RealTimeCorrelativeScanMatcher2D
-      real_time_correlative_scan_matcher_;
-  scan_matching::CeresScanMatcher2D ceres_scan_matcher_;
+      real_time_correlative_scan_matcher_;      /// 实时匹配器 --- 计算位姿
+  scan_matching::CeresScanMatcher2D ceres_scan_matcher_; /// ceres匹配求解器
 
-  std::unique_ptr<PoseExtrapolator> extrapolator_;
+  std::unique_ptr<PoseExtrapolator> extrapolator_;       /// 插值器？？？？
 
   int num_accumulated_ = 0;
   sensor::RangeData accumulated_range_data_;

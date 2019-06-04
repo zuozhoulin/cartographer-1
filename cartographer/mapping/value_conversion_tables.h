@@ -40,6 +40,10 @@ class ValueConversionTables {
                             float /* upper_bound */>,
            std::unique_ptr<const std::vector<float>>>
       bounds_to_lookup_table_;
+/** 提前计算的概率转换表，网格值为[1, 32767]，其对应的概率由这个look_up table快速计算。
+ *  这个table将[lower_bound, upper_bound]的概率值等距映射到[1, 32767]区间，因此后续
+ *  由网格值计算概率值时可直接查表，提升计算速度。 ----- 内存换计算速度
+ * **/
 };
 
 }  // namespace mapping

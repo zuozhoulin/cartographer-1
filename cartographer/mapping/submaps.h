@@ -56,6 +56,7 @@ inline uint8 ProbabilityToLogOddsInteger(const float probability) {
 // track of how many range data were inserted into it, and sets
 // 'insertion_finished' when the map no longer changes and is ready for loop
 // closing.
+/// 局部子图，子图拥有一个全局pose，子图中的位姿就是以该pose为参考的
 class Submap {
  public:
   Submap(const transform::Rigid3d& local_submap_pose)
@@ -86,7 +87,7 @@ class Submap {
 
  private:
   const transform::Rigid3d local_pose_;
-  int num_range_data_ = 0;
+  int num_range_data_ = 0; /// 子图中激光点包(scan)的数量
   bool insertion_finished_ = false;
 };
 

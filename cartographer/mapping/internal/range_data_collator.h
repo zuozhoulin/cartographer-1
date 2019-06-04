@@ -30,6 +30,7 @@ namespace mapping {
 // timing. Up to one message per sensor is buffered, so a delay of the period of
 // the slowest sensor may be introduced, which can be alleviated by passing
 // subdivisions.
+//// 用于同步不同传感器的
 class RangeDataCollator {
  public:
   explicit RangeDataCollator(

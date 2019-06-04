@@ -50,6 +50,7 @@ namespace mapping {
 namespace scan_matching {
 
 // An implementation of "Real-Time Correlative Scan Matching" by Olson.
+/// 论文 Real-Time Correlative Scan Matching 具体实现
 class RealTimeCorrelativeScanMatcher2D {
  public:
   explicit RealTimeCorrelativeScanMatcher2D(

@@ -24,6 +24,10 @@
 namespace cartographer {
 namespace mapping {
 
+/**
+ *  任务队列，注意区分这里的成员变量task和task.h中的Task
+ *  这里的WorkItem（函数返回Result）和Task中的WorkItem（返回为void）。
+ */
 struct WorkItem {
   enum class Result {
     kDoNotRunOptimization,

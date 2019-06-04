@@ -148,8 +148,10 @@ void ConstraintBuilder2D::WhenDone(
   absl::MutexLock locker(&mutex_);
   CHECK(when_done_ == nullptr);
   // TODO(gaschler): Consider using just std::function, it can also be empty.
-  when_done_ = absl::make_unique<std::function<void(const Result&)>>(callback);
+  when_done_ = absl::make_unique<std::function<void(const Result&)>>(callback);/// HandleWorkQueue(result);
   CHECK(when_done_task_ != nullptr);
+
+/// 这里就是把 pose_graph_2d中的HandleWorkQueue(result)安排到线程池中
   when_done_task_->SetWorkItem([this] { RunWhenDoneCallback(); });
   thread_pool_->Schedule(std::move(when_done_task_));
   when_done_task_ = absl::make_unique<common::Task>();

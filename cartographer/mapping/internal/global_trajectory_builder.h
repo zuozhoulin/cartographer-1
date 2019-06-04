@@ -29,7 +29,14 @@
 
 namespace cartographer {
 namespace mapping {
-
+/**
+ *  生成GlobalTrajectoryBuilder， 其中包含一个LocalTrajectoryBuilder和一个结果的回调函数LocalSlamResultCallback
+ * @param local_trajectory_builder      LocalTrajectoryBuilder-->构建局部地图，包括
+ * @param trajectory_id
+ * @param pose_graph
+ * @param local_slam_result_callback
+ * @return
+ */
 std::unique_ptr<TrajectoryBuilderInterface> CreateGlobalTrajectoryBuilder2D(
     std::unique_ptr<LocalTrajectoryBuilder2D> local_trajectory_builder,
     const int trajectory_id, mapping::PoseGraph2D* const pose_graph,

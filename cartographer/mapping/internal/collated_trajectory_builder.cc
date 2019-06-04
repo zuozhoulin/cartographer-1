@@ -27,7 +27,14 @@ namespace {
 constexpr double kSensorDataRatesLoggingPeriodSeconds = 15.;
 
 }  // namespace
-
+/**
+ *  Constructor Function,
+ * @param trajectory_options    配置选项
+ * @param sensor_collator       sensor_collator的指针
+ * @param trajectory_id         trajectory的id号
+ * @param expected_sensor_ids   期望的sensor的id
+ * @param wrapped_trajectory_builder 封装的trajectory_builder对象，实际就是 GlobalTrajectoryBuilder
+ */
 CollatedTrajectoryBuilder::CollatedTrajectoryBuilder(
     const proto::TrajectoryBuilderOptions& trajectory_options,
     sensor::CollatorInterface* const sensor_collator, const int trajectory_id,
@@ -51,6 +58,8 @@ CollatedTrajectoryBuilder::CollatedTrajectoryBuilder(
     }
     expected_sensor_id_strings.insert(sensor_id.id);
   }
+
+  /** 关键一步，为sensor_collator添加对应的回调函数和需要的传感器数据种类 **/
   sensor_collator_->AddTrajectory(
       trajectory_id, expected_sensor_id_strings,
       [this](const std::string& sensor_id, std::unique_ptr<sensor::Data> data) {
@@ -58,12 +67,20 @@ CollatedTrajectoryBuilder::CollatedTrajectoryBuilder(
       });
 }
 
+
 void CollatedTrajectoryBuilder::AddData(std::unique_ptr<sensor::Data> data) {
   sensor_collator_->AddSensorData(trajectory_id_, std::move(data));
 }
 
+/**
+ *  处理传感器数据 --- 上面AddData（）之后，在容器里面走一遭，最后又回调这个处理函数
+ * @param sensor_id     传感器类型
+ * @param data          对应的数据
+ */
 void CollatedTrajectoryBuilder::HandleCollatedSensorData(
     const std::string& sensor_id, std::unique_ptr<sensor::Data> data) {
+
+    /** 一堆都是用于控制打印log的..... **/
   auto it = rate_timers_.find(sensor_id);
   if (it == rate_timers_.end()) {
     it = rate_timers_
@@ -83,6 +100,7 @@ void CollatedTrajectoryBuilder::HandleCollatedSensorData(
     last_logging_time_ = std::chrono::steady_clock::now();
   }
 
+  /// 这里实际是GlobalTrajectoryBuilder->AddSensorData(data.sensor_id_, data.data_) ,slam对传入的传感器数据进行处理
   data->AddToTrajectoryBuilder(wrapped_trajectory_builder_.get());
 }
 

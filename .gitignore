@@ -1,2 +1,15 @@
 build
 bazel-*
+
+cmake-build-debug/
+cmake-build-release/
+cmake-build-relwithdebinfo/
+references/
+*/references/
+*/cmake-build-debug/
+*/cmake-build-release/
+*/cmake-build-relwithdebinfo/
+
+.idea
+*.iml
+

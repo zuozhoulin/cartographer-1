@@ -106,6 +106,7 @@ class OccupiedSpaceCostFunction2D {
 
 }  // namespace
 
+/** 代价函数 **/
 ceres::CostFunction* CreateOccupiedSpaceCostFunction2D(
     const double scaling_factor, const sensor::PointCloud& point_cloud,
     const Grid2D& grid) {

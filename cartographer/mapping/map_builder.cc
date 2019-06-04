@@ -90,7 +90,10 @@ proto::MapBuilderOptions CreateMapBuilderOptions(
            options.use_trajectory_builder_3d());
   return options;
 }
-
+/**
+ * cartographer 生成线程池、poseGraph、sensor_collator
+ * @param options
+ */
 MapBuilder::MapBuilder(const proto::MapBuilderOptions& options)
     : options_(options), thread_pool_(options.num_background_threads()) {
   CHECK(options.use_trajectory_builder_2d() ^
@@ -115,12 +118,23 @@ MapBuilder::MapBuilder(const proto::MapBuilderOptions& options)
     sensor_collator_ = absl::make_unique<sensor::Collator>();
   }
 }
-
+/**
+ *  添加trajectory_builder，关键的部分，构造函数构造了线程资源（thread_pool_）、图优化求解器（pose_graph）、
+ *  传感器接口(sensor_collator_)，而这里提供了地图构建方法，包括全局地图更新、局部位姿求解等等
+ * @param expected_sensor_ids
+ * @param trajectory_options
+ * @param local_slam_result_callback
+ * @return
+ */
 int MapBuilder::AddTrajectoryBuilder(
     const std::set<SensorId>& expected_sensor_ids,
     const proto::TrajectoryBuilderOptions& trajectory_options,
     LocalSlamResultCallback local_slam_result_callback) {
-  const int trajectory_id = trajectory_builders_.size();
+  const int trajectory_id = trajectory_builders_.size(); // 新添加trajectory的id
+
+  /// 构建trajectory builder，过程是类似的分成两种情况：2D / 3D,
+  /// trajectory_builders_ 实际为CollatedTrajectoryBuilder类型，里面包含当前类的sensor_collator_指针和
+  /// GlobalTrajectoryBuilderxD的对象（其中又包含LocalTrajectoryBuilderxD和当前类的poseGraph指针）
   if (options_.use_trajectory_builder_3d()) {
     std::unique_ptr<LocalTrajectoryBuilder3D> local_trajectory_builder;
     if (trajectory_options.has_trajectory_builder_3d_options()) {
@@ -136,13 +150,16 @@ int MapBuilder::AddTrajectoryBuilder(
             std::move(local_trajectory_builder), trajectory_id,
             static_cast<PoseGraph3D*>(pose_graph_.get()),
             local_slam_result_callback)));
-  } else {
+  }
+  else { /// 2d
+    // 构建LocalTrajectoryBuilder
     std::unique_ptr<LocalTrajectoryBuilder2D> local_trajectory_builder;
     if (trajectory_options.has_trajectory_builder_2d_options()) {
       local_trajectory_builder = absl::make_unique<LocalTrajectoryBuilder2D>(
           trajectory_options.trajectory_builder_2d_options(),
           SelectRangeSensorIds(expected_sensor_ids));
     }
+    /// 构建CollatedTrajectoryBuilder 其中包含GlobalTrajectoryBuilder
     DCHECK(dynamic_cast<PoseGraph2D*>(pose_graph_.get()));
     trajectory_builders_.push_back(absl::make_unique<CollatedTrajectoryBuilder>(
         trajectory_options, sensor_collator_.get(), trajectory_id,
@@ -152,9 +169,11 @@ int MapBuilder::AddTrajectoryBuilder(
             static_cast<PoseGraph2D*>(pose_graph_.get()),
             local_slam_result_callback)));
   }
+  /// 纯定位模式?
   MaybeAddPureLocalizationTrimmer(trajectory_id, trajectory_options,
                                   pose_graph_.get());
 
+  /// 设置trajectory的初始位姿
   if (trajectory_options.has_initial_trajectory_pose()) {
     const auto& initial_trajectory_pose =
         trajectory_options.initial_trajectory_pose();
@@ -163,6 +182,8 @@ int MapBuilder::AddTrajectoryBuilder(
         transform::ToRigid3(initial_trajectory_pose.relative_pose()),
         common::FromUniversal(initial_trajectory_pose.timestamp()));
   }
+
+  /// 添加到 all_trajectory_builder_options_
   proto::TrajectoryBuilderOptionsWithSensorIds options_with_sensor_ids_proto;
   for (const auto& sensor_id : expected_sensor_ids) {
     *options_with_sensor_ids_proto.add_sensor_id() = ToProto(sensor_id);

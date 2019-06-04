@@ -19,10 +19,18 @@
 namespace cartographer {
 namespace sensor {
 
+/**
+ * 这个函数关键是传入Callback ---> 即当新的传感器数据到来时的回调函数
+ * @param trajectory_id          对应的trajectory id
+ * @param expected_sensor_ids    期望的传感器数据
+ * @param callback               ----> 这里是 CollatedTrajectoryBuilder::HandleCollatedSensorData(...)函数
+ */
 void Collator::AddTrajectory(
     const int trajectory_id,
     const absl::flat_hash_set<std::string>& expected_sensor_ids,
     const Callback& callback) {
+
+    /// 这里把回调函数传入实际存储的消息队列中
   for (const auto& sensor_id : expected_sensor_ids) {
     const auto queue_key = QueueKey{trajectory_id, sensor_id};
     queue_.AddQueue(queue_key,
@@ -38,13 +46,17 @@ void Collator::FinishTrajectory(const int trajectory_id) {
     queue_.MarkQueueAsFinished(queue_key);
   }
 }
-
+/**
+ *  添加传感器数据
+ * @param trajectory_id
+ * @param data
+ */
 void Collator::AddSensorData(const int trajectory_id,
                              std::unique_ptr<Data> data) {
   QueueKey queue_key{trajectory_id, data->GetSensorId()};
   queue_.Add(std::move(queue_key), std::move(data));
 }
-
+/** 清除缓存 **/
 void Collator::Flush() { queue_.Flush(); }
 
 absl::optional<int> Collator::GetBlockingTrajectoryId() const {
